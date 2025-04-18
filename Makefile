@@ -1,57 +1,123 @@
-# Project Name
-TARGET        := dsi_shop
-BUILD         := build
-SOURCES       := source
-DATA          := data
-INCLUDES      := include
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
 
-# List of libraries to link
-LIBS          := -lfat -lnds9
+ifeq ($(strip $(DEVKITARM)),)
+$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+endif
 
-# Tools
-DEVKITARM := $(shell echo $$DEVKITARM)
+include $(DEVKITARM)/ds_rules
 
-CC := $(DEVKITARM)/bin/arm-eabi-gcc
-CXX := $(DEVKITARM)/bin/arm-eabi-g++
-AS := $(DEVKITARM)/bin/arm-eabi-as
-LD := $(DEVKITARM)/bin/arm-eabi-ld
-AR := $(DEVKITARM)/bin/arm-eabi-ar
-OBJCOPY := $(DEVKITARM)/bin/arm-eabi-objcopy
-OBJDUMP := $(DEVKITARM)/bin/arm-eabi-objdump
+#---------------------------------------------------------------------------------
+# TARGET is the name of the output
+# BUILD is the directory where object files & intermediate files will be placed
+# SOURCES is a list of directories containing source code
+# INCLUDES is a list of directories containing extra header files
+#---------------------------------------------------------------------------------
+TARGET		:=	$(shell basename $(CURDIR))
+BUILD		:=	build
+SOURCES		:=	gfx source data
+INCLUDES	:=	include build
+
+#---------------------------------------------------------------------------------
+# options for code generation
+#---------------------------------------------------------------------------------
+ARCH	:=	-march=armv5te -mtune=arm946e-s -mthumb
+
+CFLAGS	:=	-g -Wall -O2 -ffunction-sections -fdata-sections\
+			$(ARCH)
+
+CFLAGS	+=	$(INCLUDE) -DARM9
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
+
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	-specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+
+#---------------------------------------------------------------------------------
+# any extra libraries we wish to link with the project
+#---------------------------------------------------------------------------------
+LIBS	:= -lnds9
 
 
-CFLAGS        := -Wall -O2 -mthumb -mthumb-interwork -ffunction-sections -fdata-sections \
-                 -I$(INCLUDES) -I$(DEVKITPRO)/libnds/include -I$(DEVKITPRO)/libfat/include -std=c99
-CFLAGS        += -DARM9
-CXXFLAGS      := $(CFLAGS)
+#---------------------------------------------------------------------------------
+# list of directories containing libraries, this must be the top level containing
+# include and lib
+#---------------------------------------------------------------------------------
+LIBDIRS	:=	$(LIBNDS)
 
-LDFLAGS       := -mthumb -mthumb-interwork -specs=ds_arm9.specs \
-                 -Wl,-Map,$(TARGET).map \
-                 -Wl,--gc-sections \
-                 -L$(DEVKITPRO)/libnds/lib -L$(DEVKITPRO)/libfat/lib
+#---------------------------------------------------------------------------------
+# no real need to edit anything past this point unless you need to add additional
+# rules for different file extensions
+#---------------------------------------------------------------------------------
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+#---------------------------------------------------------------------------------
 
-# Source files
-CFILES        := $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
-OFILES        := $(patsubst %.c,$(BUILD)/%.o,$(CFILES))
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
 
-# Rules
-.PHONY: all clean
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
+export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
-all: $(TARGET).nds
+CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+BINFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.bin)))
 
-$(TARGET).nds: $(TARGET).elf
-	@echo "[binary] -> $@"
-	@ndstool -c $@ -9 $< -b icon.bmp -t banner.bin
+#---------------------------------------------------------------------------------
+# use CXX for linking C++ projects, CC for standard C
+#---------------------------------------------------------------------------------
+ifeq ($(strip $(CPPFILES)),)
+#---------------------------------------------------------------------------------
+	export LD	:=	$(CC)
+#---------------------------------------------------------------------------------
+else
+#---------------------------------------------------------------------------------
+	export LD	:=	$(CXX)
+#---------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------
 
-$(TARGET).elf: $(OFILES)
-	@echo "[link] -> $@"
-	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+export OFILES	:=	$(BINFILES:.bin=.o) \
+					$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 
-$(BUILD)/%.o: %.c
-	@mkdir -p $(dir $@)
-	@echo "[cc] -> $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+					-I$(CURDIR)/$(BUILD)
 
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+
+.PHONY: $(BUILD) clean
+
+#---------------------------------------------------------------------------------
+$(BUILD):
+	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+#---------------------------------------------------------------------------------
 clean:
-	@echo "[clean]"
-	@rm -rf $(BUILD) $(TARGET).elf $(TARGET).nds $(TARGET).map
+	@echo clean ...
+	@rm -fr $(BUILD) $(TARGET).elf $(TARGET).nds $(TARGET).ds.gba
+
+
+#---------------------------------------------------------------------------------
+else
+
+DEPENDS	:=	$(OFILES:.o=.d)
+
+#---------------------------------------------------------------------------------
+# main targets
+#---------------------------------------------------------------------------------
+$(OUTPUT).nds	: 	$(OUTPUT).elf
+$(OUTPUT).elf	:	$(OFILES)
+
+#---------------------------------------------------------------------------------
+%.o	:	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	$(bin2o)
+
+
+-include $(DEPENDS)
+
+#---------------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------------
