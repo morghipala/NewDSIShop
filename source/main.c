@@ -12,10 +12,9 @@
 
 int main(void) {
     // init schermi e console
-    videoSetMode(MODE_FB0);
-    vramSetBankA(VRAM_A_LCD);
+    videoSetMode(MODE_0_2D);
+    vramSetBankA(VRAM_A_MAIN_BG);
     consoleDemoInit();
-    consoleInitDefault((u16*)VRAM_A_LCD, 0, 0);
 
     irqEnable(IRQ_VBLANK);
     fatInitDefault();
