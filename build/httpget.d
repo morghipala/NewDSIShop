@@ -1,4 +1,5 @@
-main.o: /mnt/c/Users/morgh/Documents/GitHub/NewDSIShop/source/main.cpp \
+httpget.o: \
+ /mnt/c/Users/morgh/Documents/GitHub/NewDSIShop/httpget/source/httpget.c \
  /opt/devkitpro/libnds/include/nds.h \
  /opt/devkitpro/calico/include/calico.h \
  /opt/devkitpro/calico/include/calico/types.h \
@@ -111,7 +112,12 @@ main.o: /mnt/c/Users/morgh/Documents/GitHub/NewDSIShop/source/main.cpp \
  /opt/devkitpro/libnds/include/nds/arm9/sprite.h \
  /opt/devkitpro/libnds/include/nds/arm9/trig_lut.h \
  /opt/devkitpro/libnds/include/nds/arm9/video.h \
- /opt/devkitpro/libnds/include/nds/arm9/videoGL.h
+ /opt/devkitpro/libnds/include/nds/arm9/videoGL.h \
+ /opt/devkitpro/libnds/include/dswifi9.h \
+ /opt/devkitpro/libnds/include/netinet/in.h \
+ /opt/devkitpro/libnds/include/arpa/inet.h \
+ /opt/devkitpro/libnds/include/sys/socket.h \
+ /opt/devkitpro/libnds/include/netdb.h
 /opt/devkitpro/libnds/include/nds.h:
 /opt/devkitpro/calico/include/calico.h:
 /opt/devkitpro/calico/include/calico/types.h:
@@ -225,3 +231,8 @@ main.o: /mnt/c/Users/morgh/Documents/GitHub/NewDSIShop/source/main.cpp \
 /opt/devkitpro/libnds/include/nds/arm9/trig_lut.h:
 /opt/devkitpro/libnds/include/nds/arm9/video.h:
 /opt/devkitpro/libnds/include/nds/arm9/videoGL.h:
+/opt/devkitpro/libnds/include/dswifi9.h:
+/opt/devkitpro/libnds/include/netinet/in.h:
+/opt/devkitpro/libnds/include/arpa/inet.h:
+/opt/devkitpro/libnds/include/sys/socket.h:
+/opt/devkitpro/libnds/include/netdb.h:
